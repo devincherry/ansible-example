@@ -1,0 +1,42 @@
+---
+# Variables listed here are applicable to all host groups
+
+# standard root password and ssh key(s) for all nodes
+COMMON_ROOT_PASSWORD: "!!"
+COMMON_ROOT_SSH_KEY: ''
+
+
+#####################################
+## EXAMPLE: removing a user account
+#  someusername:
+#    state: 'absent'
+#####################################
+
+# Developers only
+developer_accounts:
+  exampledev:
+    password: '!!'
+    shell: '/usr/sbin/nologin'
+    groups: 'developers'
+
+# Admins only
+admin_accounts:
+  someuser:
+    password: '!!'
+    ssh_authorized_key: 'ssh-rsa AAAAAAAAAAAAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx someuser@laptop'
+    shell: '/bin/bash'
+    groups: 'wheel'
+
+# default to only adding admin users. Override on a per-group basis elsewhere, if needed.
+accounts: "{{ admin_accounts }}"
+
+# By default, set my_hostname to host's current hostname. override per-host in host_vars if desired.
+my_hostname: "{{ ansible_fqdn }}"
+
+# standard NTP servers for all nodes
+ntpservers:
+  - 0.amazon.pool.ntp.org
+  - 1.amazon.pool.ntp.org
+  - 2.amazon.pool.ntp.org
+  - 3.amazon.pool.ntp.org
+

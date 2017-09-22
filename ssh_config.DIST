@@ -1,0 +1,21 @@
+###
+### Global Defaults
+###
+
+HashKnownHosts no
+TCPKeepAlive no
+ServerAliveInterval 20
+ServerAliveCountMax 6
+User yourusername
+
+
+Host dev-sshgw
+    HostName dev-sshgw.yarnixia.com
+    ForwardAgent yes
+    #Port 5022
+
+
+Host 172.16.*
+    ProxyCommand ssh dev-sshgw nc %h %p
+
+

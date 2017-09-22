@@ -1,0 +1,8 @@
+---
+# variables for vagrant hosts
+
+# standard NTP servers for all nodes
+ntpservers:
+  - time-nw.nist.gov
+  - time.nist.gov
+

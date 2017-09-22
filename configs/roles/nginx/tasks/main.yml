@@ -1,0 +1,26 @@
+---
+# setup the nginx service
+
+- name: Install Nginx (Ubuntu 16)
+  apt: name="nginx-full=1.10.*" state=installed
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version == "16"
+
+- name: Remove the sites-enabled/default link
+  file: path=/etc/nginx/sites-enabled/default state=absent
+  notify: Reload nginx
+
+- name: Manage nginx base config file (Ubuntu 16)
+  action: template
+    dest="/etc/nginx/nginx.conf"
+    src=nginx-1.10.conf.j2
+    owner=root
+    group=root
+    mode=0444
+    force=yes
+  notify: Reload nginx
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version == "16"
+
+- name: Manage nginx service (Ubuntu)
+  service: name=nginx state=started enabled=yes
+  when: ansible_distribution == "Ubuntu"
+

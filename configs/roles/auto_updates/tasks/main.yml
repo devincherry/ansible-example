@@ -1,0 +1,29 @@
+---
+
+- name: Install APT packages (Ubuntu)
+  apt: name={{ item }} state=installed update_cache=yes
+  with_items:
+   - unattended-upgrades
+   - mailutils
+  when: ansible_distribution == "Ubuntu"
+
+- name: Configure /etc/apt/apt.conf.d/10periodic
+  template:
+    dest: "/etc/apt/apt.conf.d/10periodic"
+    src: "10periodic.j2"
+    owner: root
+    group: root
+    mode: 0444
+    force: yes
+  when: ansible_distribution == "Ubuntu"
+
+- name: Configure /etc/apt/apt.conf.d/50unattended-upgrades
+  template:
+    dest: "/etc/apt/apt.conf.d/50unattended-upgrades"
+    src: "50unattended-upgrades.j2"
+    owner: root
+    group: root
+    mode: 0444
+    force: yes
+  when: ansible_distribution == "Ubuntu"
+

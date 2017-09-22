@@ -1,0 +1,11 @@
+---
+# role for setting up non-app-specific ci deployment environment on a target host
+
+- name: "Create [ci] user"
+  user: name=ci comment="CI Deployment User" password='!!' group=www-data groups= shell=/bin/bash
+  tags: accounts
+
+- name: "Setup [ci] user's SSH authorized_keys"
+  authorized_key: user=ci exclusive=yes key="{{ ci_deploy_ssh_key }}"
+  tags: accounts
+

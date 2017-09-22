@@ -1,0 +1,12 @@
+---
+
+- name: Apply configuration to Vagrant boxes
+  hosts: vagrant_boxes
+  become: true
+  become_user: root
+  #strategy: debug
+  vars:
+    opsworks_managed: false
+  roles:
+    - { role: common, tags: ['common'] }
+

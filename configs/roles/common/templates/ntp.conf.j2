@@ -1,0 +1,23 @@
+### ANSIBLE CONFIGURED - DO NOT MODIFY ###
+
+driftfile /var/lib/ntp/drift
+
+restrict default nomodify notrap nopeer noquery
+restrict 127.0.0.1
+restrict ::1
+
+{% for server in ntpservers %}
+server {{ server }} iburst
+{% endfor %}
+
+includefile /etc/ntp/crypto/pw
+
+keys /etc/ntp/keys
+
+logconfig =clockall =peerall =sysall =syncall
+
+interface listen eth0
+interface ignore ipv6
+
+disable monitor
+

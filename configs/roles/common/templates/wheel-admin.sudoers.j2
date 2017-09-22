@@ -1,0 +1,43 @@
+##
+## ANSIBLE-CONFIGURED: Local modification is NOT recommended!
+##
+
+#includedir /etc/sudoers.d
+
+Defaults        env_reset,log_year,!mail_no_user
+
+
+### Cmnd alias specification ###
+
+Cmnd_Alias   READONLY_COMMANDS = /usr/bin/cat, /bin/cat, /usr/bin/less, /usr/bin/more, /bin/more, /usr/bin/tail, /usr/bin/head, /usr/bin/ls, /bin/ls
+Cmnd_Alias   NAGIOS_COMMANDS = /usr/bin/docker info
+Cmnd_Alias   SERVICE_CTL_COMMANDS = /usr/bin/systemctl, /usr/sbin/service, /sbin/initctl
+
+
+### Users/Groups specification ###
+
+# allow admins to do anything
+root    ALL=(ALL) NOPASSWD:ALL
+%wheel  ALL=(ALL) NOPASSWD:ALL
+%admin  ALL=(ALL) NOPASSWD:ALL
+
+# default admin users for various AMIs
+ubuntu  ALL=(ALL) NOPASSWD:ALL
+centos  ALL=(ALL) NOPASSWD:ALL
+ec2-user ALL=(ALL) NOPASSWD:ALL
+
+# allow CI to manage services as part of deployment automation
+ci      ALL=(ALL) NOPASSWD: SERVICE_CTL_COMMANDS
+
+# allow nagios/nrpe to execute some privileged commands for monitoring
+nagios  ALL=(ALL) NOPASSWD: NAGIOS_COMMANDS
+nrpe    ALL=(ALL) NOPASSWD: NAGIOS_COMMANDS
+
+# allow members of the developers group to run a limited set of 'safe' commands
+%developers ALL = NOPASSWD: READONLY_COMMANDS
+
+# allow some non-admins to sudo on dev instances
+{% if my_environment is defined and my_environment == "dev" %}
+bozzlesmith ALL=(ALL) NOPASSWD:ALL
+{% endif %}
+

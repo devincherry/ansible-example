@@ -1,0 +1,19 @@
+### ANSIBLE CONFIGURED
+
+/var/log/demoapp/*.log {
+    daily
+    rotate 7
+    missingok
+    ifempty
+    compress
+    nodelaycompress
+    copytruncate
+    dateyesterday
+    dateext
+    dateformat -%Y%m%d
+    nomail
+    noolddir
+    nosharedscripts
+    su root root
+}
+

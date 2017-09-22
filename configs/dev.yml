@@ -1,0 +1,34 @@
+---
+# This is the main playbook for all configurations on real servers. See `vagrant.yml` for Vagrant
+# testing of plays/tasks.
+######################################################################################################
+
+
+- name: Apply common settings
+  hosts:
+    - dev
+  become: true
+  become_user: root
+  roles:
+    - { role: common, tags: ['common'] }
+
+
+- name: Configure automatic updates on some hosts
+  hosts:
+    - dev_sshgw_hosts
+  become: true
+  become_user: root
+  roles:
+    - { role: auto_updates, tags: ['updates'] }
+
+
+- name: Apply configuration to appservers
+  hosts:
+    - dev_fe_appservers
+  become: true
+  become_user: root
+  roles:
+    - { role: ci_deploy, tags: ['deployment'] }
+    - { role: nginx, tags: ['apps', 'nginx'] }
+    #- { role: demoapp, tags: ['apps', 'demoapp'] }
+

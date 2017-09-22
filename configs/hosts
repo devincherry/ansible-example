@@ -1,0 +1,32 @@
+###[ EXAMPLES ]###
+# - Temporarily override default credentials - useful when initially configuring a host.
+#
+#      some_hostname_or_ip  ansible_user=ubuntu ansible_ssh_private_key_file='~/.ssh/admin_aws_key' ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+#
+################
+
+
+[vagrant_boxes]
+## ubuntu
+#192.168.77.118 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+## centos
+#192.168.77.119 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+#192.168.77.120 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+
+## This entry is required for local tasks
+[localmachine]
+localhost ansible_python_interpreter=python
+
+[dev_fe_appservers]
+dev-demoapp-0
+
+[dev_sshgw_hosts]
+dev-sshgw-0
+
+
+### PARENT GROUPS ###
+
+[dev:children]
+dev_sshgw_hosts
+dev_fe_appservers
+

@@ -1,0 +1,5 @@
+---
+
+my_environment: "dev"
+accounts: "{{ admin_accounts | combine(developer_accounts) }}"
+

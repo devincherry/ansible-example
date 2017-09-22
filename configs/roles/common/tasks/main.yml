@@ -1,0 +1,203 @@
+---
+# This playbook contains common tasks that will be run on all nodes.
+
+- name: Install EPEL YUM repo
+  yum: name=epel-release state=present
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+
+- name: Install PGDG YUM repo
+  yum: name=https://download.postgresql.org/pub/repos/yum/9.5/redhat/rhel-7-x86_64/pgdg-centos95-9.5-3.noarch.rpm state=present
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+
+- name: Setup MariaDB YUM repo
+  yum_repository:
+    name: mariadb
+    description: MariaDB Official Repo
+    baseurl: http://yum.mariadb.org/10.0/centos7-amd64
+    gpgkey: https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+    gpgcheck: yes
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+
+- name: Install CentOS-specific RPMs
+  yum: name={{ item }} state=installed
+  with_items:
+   - postgresql95
+   - MariaDB-client
+   - java-1.8.0-openjdk
+   - net-tools
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+
+# - name: Install custom S3 YUM repo
+#   yum_repository:
+#     name: custom_s3
+#     description: Custom S3 YUM repo
+#     baseurl: http://s3-{{ aws_s3_bucket_region }}.amazonaws.com/{{ aws_s3_bucket_yum_repo }}
+#   when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+
+# - name: Setup custom S3 APT repo
+#   apt_repository:
+#     repo: deb http://s3-{{ aws_s3_bucket_region }}.amazonaws.com/{{ aws_s3_bucket_deb_repo }} stable main
+#     state: present
+#   when: (ansible_distribution == "Ubuntu")
+
+
+- name: Install standard packages (RHEL)
+  yum: name={{ item }} state=installed
+  with_items:
+   - bind-utils
+   - curl
+   - libselinux-python
+   - libsemanage-python
+   - nmap
+   - ntp
+   - redhat-lsb
+   - screen
+   - sysstat
+   - tree
+   - vim
+   - wget
+   - lvm2
+   - ca-certificates
+  when: (ansible_distribution == "CentOS") or (ansible_distribution == "Amazon")
+
+- name: Install standard packages (Amazon-specific)
+  yum: name={{ item }} state=installed
+  with_items:
+   - nc
+  when: ansible_distribution == "Amazon"
+
+- name: Install standard packages (CentOS-specific)
+  yum: name={{ item }} state=installed
+  with_items:
+   - nmap-ncat
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+
+- name: Install standard packages (Ubuntu)
+  apt: name={{ item }} state=installed
+  with_items:
+   - build-essential
+   - curl
+   - lsb-base
+   - lsb-release
+   - lvm2
+   - nmap
+   - ntp
+   - screen
+   - sysstat
+   - tree
+   - vim-nox
+   - wget
+   - vnstat
+  when: ansible_distribution == "Ubuntu"
+
+
+- name: Configure root account
+  user: name="root" password="{{ COMMON_ROOT_PASSWORD }}" shell="/bin/bash"
+  tags: accounts
+
+- name: Configure root ssh key
+  authorized_key: user="root" key="{{ COMMON_ROOT_SSH_KEY }}" exclusive=yes
+  tags: accounts
+
+
+- name: Configure user groups
+  group: name={{ item }}
+  with_items:
+   - wheel
+  tags: accounts
+
+- name: Configure user accounts
+  user: 
+    name: "{{ item.key }}" 
+    password: "{{ item.value.password | default('!!') }}" 
+    shell: "{{ item.value.shell | default('/bin/bash') }}" 
+    groups: "{{ item.value.groups }}" 
+    state: "{{ item.value.state | default('present') }}"
+  with_dict: "{{ accounts }}"
+  tags: accounts
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Configure user ssh keys
+  authorized_key: user="{{ item.key }}" key="{{ item.value.ssh_authorized_key | default('') }}" exclusive=yes
+  with_dict: "{{ accounts }}"
+  tags: accounts
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: "Add host's own entry to /etc/hosts"
+  lineinfile: dest=/etc/hosts regexp='.*{{ inventory_hostname_short }}$' line="{{ ansible_default_ipv4.address }} {{inventory_hostname}} {{inventory_hostname_short}}" state=present
+
+- name: Configure sudoers
+  template:
+    dest: /etc/sudoers
+    src: wheel-admin.sudoers.j2
+    owner: root
+    group: root
+    mode: 0440
+    force: yes
+    validate: '/usr/sbin/visudo -cf %s'
+  tags: accounts
+
+- name: Configure hostname
+  hostname: name="{{ inventory_hostname_short }}"
+
+## TODO: need to configure RHEL/Amazon ntp too
+
+- name: Configure ntp (Ubuntu)
+  template: src=ntp.conf.j2 dest=/etc/ntp.conf
+  tags: ntp
+  notify: restart ntp
+  when: ansible_distribution == "Ubuntu"
+
+- name: Start the ntp service (Ubuntu)
+  service: name=ntp state=started enabled=yes
+  tags: ntp
+  when: ansible_distribution == "Ubuntu"
+
+
+- name: Enable sadc for sar reports (Ubuntu)
+  template:
+    dest: /etc/default/sysstat
+    src: etc-default-sysstat.j2
+    owner: root
+    group: root
+    mode: 0444
+    force: yes
+  when: ansible_distribution == "Ubuntu"
+
+
+- name: Configure the SSH server (RHEL)
+  template:
+    dest: /etc/ssh/sshd_config
+    src: sshd_config.j2
+    owner: root
+    group: root
+    mode: 0444
+    force: yes
+  notify: 
+    - reload sshd
+  when: (ansible_distribution == "CentOS") or (ansible_distribution == "Amazon")
+
+- name: Configure the SSH server (Ubuntu)
+  template:
+    dest: /etc/ssh/sshd_config
+    src: sshd_config.j2
+    owner: root
+    group: root
+    mode: 0444
+    force: yes
+  notify: 
+    - reload ssh
+  when: ansible_distribution == "Ubuntu"
+
+
+- name: Configure logrotate.d files
+  copy:
+    src: logrotate.d/
+    dest: /etc/logrotate.d/
+    owner: root
+    group: root
+    mode: 0444
+  tags: logging
+
